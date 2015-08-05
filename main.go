@@ -7,18 +7,20 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
 var result Result
 
 func main() {
-	t := &github.UnauthenticatedRateLimitedTransport{
-		ClientID:     "9d7ad4e06ed11c70c81b",
-		ClientSecret: "8d91201c4a5dbd7ab45ba41e98c91da7d1f10111",
-	}
-	client := github.NewClient(t.Client())
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: "ae2c7e54221371785fd119d5208655119cc4c3d9"},
+	)
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
 
-	opt := &github.RepositoryListOptions{Type: "owner", Sort: "updated", Direction: "desc"}
+	client := github.NewClient(tc)
+
+	opt := &github.RepositoryListOptions{Type: "owner", Sort: "updated"}
 	repos, _, err := client.Repositories.List("mediamath", opt)
 
 	if err != nil {
@@ -28,6 +30,7 @@ func main() {
 	languages := make(map[string]Language)
 
 	for _, repo := range repos {
+
 		fmt.Println(*repo.Name)
 		langs, _, err := client.Repositories.ListLanguages("Mediamath", *repo.Name)
 
@@ -37,11 +40,11 @@ func main() {
 
 		for langStr := range langs {
 			if lang, ok := languages[langStr]; ok {
-				lang.Repos = append(lang.Repos, Repo{*repo.Name})
+				lang.Repos = append(lang.Repos, *repo.Name)
 				languages[langStr] = lang
 			} else {
-				languages[langStr] = Language{Name: langStr, Repos: make([]Repo, 1, 100)}
-				languages[langStr].Repos[0] = Repo{*repo.Name}
+				languages[langStr] = Language{Name: langStr, Repos: make([]string, 1, 100)}
+				languages[langStr].Repos[0] = *repo.Name
 			}
 		}
 	}
@@ -70,12 +73,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 }
 
 type Language struct {
-	Name  string `json:"language"`
-	Repos []Repo `json:"repos"`
-}
-
-type Repo struct {
-	Name string `json:"repository"`
+	Name  string   `json:"language"`
+	Repos []string `json:"repos"`
 }
 
 type Result struct {
