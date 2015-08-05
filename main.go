@@ -7,18 +7,16 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 )
 
 var result Result
 
 func main() {
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "ae2c7e54221371785fd119d5208655119cc4c3d9"},
-	)
-	tc := oauth2.NewClient(oauth2.NoContext, ts)
-
-	client := github.NewClient(tc)
+	t := &github.UnauthenticatedRateLimitedTransport{
+		ClientID:     "9d7ad4e06ed11c70c81b",
+		ClientSecret: "8d91201c4a5dbd7ab45ba41e98c91da7d1f10111",
+	}
+	client := github.NewClient(t.Client())
 
 	opt := &github.RepositoryListOptions{Type: "owner", Sort: "updated"}
 	repos, _, err := client.Repositories.List("mediamath", opt)
